@@ -1,5 +1,6 @@
 import { uuid } from 'uuidv4';
 import * as yup from 'yup';
+import Queue from '../lib/Queue';
 
 import Repository from '../Schemas/Repository';
 
@@ -37,6 +38,13 @@ class Repositoriesontroller {
 
         const repository = await Repository.create(dataRepository);
 
+        const dataEmail = {
+            subject: 'Repositório adicionado com Sucesso !!',
+            text: `O repositório ${title}, foi adicionado com Sucesso !!`
+        };
+
+        Queue.add(dataEmail);
+
         return res.json(repository);
     }
 
@@ -50,8 +58,6 @@ class Repositoriesontroller {
         if (!(await schema.isValid(req.body))) {
             return res.status(400).json({ err: 'missing info to register' });
         }
-
-        const { title, url, techs } = req.body;
 
         /**
          *Procurando todos os repositórios
@@ -70,6 +76,13 @@ class Repositoriesontroller {
             return res.status(400).json({ err: 'repository not found' });
         }
 
+        const dataEmail = {
+            subject: 'Repositório Atualizado com Sucesso !!',
+            text: `O repositório ${repository.title}, foi Atualizado com Sucesso !!`
+        };
+
+        Queue.add(dataEmail);
+
         /* Atualizando o dado do Repositorio*/
 
         const repositoryUpdated = await repository.update(req.body);
@@ -77,6 +90,27 @@ class Repositoriesontroller {
         return res.json(req.body);
 
     }
+
+    async delete(req, res) {
+        const { id } = req.params;
+
+        const repository = await Repository.findOne({ id });
+
+        if (!repository) {
+            return res.status(400).json({ err: 'repository not found' });
+        };
+
+        await Repository.deleteOne({ id });
+
+        const dataEmail = {
+            subject: 'Repositório Deletado com Sucesso !!',
+            text: `O repositório ${repository.title}, foi Deletado com Sucesso !!`
+        };
+
+        Queue.add(dataEmail);
+
+        return res.status(202).send();
+    };
 };
 
 export default new Repositoriesontroller();
